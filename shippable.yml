@@ -30,7 +30,6 @@ env:
     - SHIP_IMG_RES=$DOCKER_REPO"_img_dh"
 
 build:
-
   # http://docs.shippable.com/ci/shippableyml/#ci
   ci:
     # npm mirrors can sometimes be flacky, better to use shippable_retry
@@ -50,17 +49,51 @@ build:
     
   #this will be ignored if you are not using Assembly Lines to trigger another job after ci  
   on_success:
-    - shipctl put_resource_state $SHIP_IMG_RES versionName $BRANCH.$BUILD_NUMBER
+    - if [ "$IS_PULL_REQUEST" != true ]; then shipctl put_resource_state $SHIP_IMG_RES versionName $BRANCH.$BUILD_NUMBER; fi
 
-## OPTIONAL : In case you want to use this image in CD Assembly Lines
 resources:
   - name: node_app_img_dh
     type: image
     integration: avinci_dh # replace with your integration name
     versionTemplate:
-      sourceName: "devopsrecipes/node_app" # replace with your Hub URL
+      sourceName: "avinci/node_app" # replace with your Hub URL
       isPull: false
       versionName: latest
+
+# REPO of kube configs
+  - name: config_repo
+    type: gitRepo
+    integration: "demo_gh"
+    versionTemplate:
+      sourceName: "avinci/cd_gke_kubectl"
+      branch: master
+
+# GKE cluster info
+  - name: dev_cluster
+    type: cluster
+    integration: "dr_avi"
+    pointer:
+      sourceName: "cluster"
+      region: "us-west1-a"
+
+  - name: prod_cluster
+    type: cluster
+    integration: "dr_avi"
+    pointer:
+      sourceName: "cluster"
+      region: "us-west1-a"
+
+  - name: prod_trig
+    type: param
+    versionTemplate:
+      params:
+        DUMMY: "seed"
+
+  - name: dev_trig
+    type: param
+    versionTemplate:
+      params:
+        DUMMY: "seed"
 
 jobs:
   - name: node_app_runCI
@@ -71,3 +104,44 @@ jobs:
       - OUT: node_app_img_dh
     flags:
       - node_app
+
+  - name: app_manifest
+    type: manifest
+    steps:
+      - IN: node_app_img_dh
+        switch: off
+
+  - name: test_kctl
+    type: runSh
+    steps:
+      - IN: node_app_img_dh
+      - TASK:
+          name: test
+          runtime:
+            options:
+              env:
+                - TRIG_RES: "dev_trig"
+          script:
+            - export APP_TAG=$(shipctl get_resource_version_key node_app_img_dh versionName)
+            - if [[ $APP_TAG = *"master"* ]]; then export TRIG_RES="prod_trig"; fi
+            - shipctl put_resource_state $TRIG_RES versionName $APP_TAG
+       - OUT: prod_trig
+       - OUT: dev_trig
+
+  - name: dev_deploy
+    type: deploy
+    steps:
+      - IN: dev_trig
+      - IN: dev_cluster
+        switch: off
+      - IN: app_manifest
+        switch: off
+
+  - name: prod_deploy
+    type: deploy
+    steps:
+      - IN: prod_trig
+      - IN: prod_cluster
+        switch: off
+      - IN: app_manifest
+        switch: off
