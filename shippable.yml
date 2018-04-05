@@ -101,7 +101,6 @@ jobs:
     type: manifest
     steps:
       - IN: node_app_img_dh
-        switch: off
 
   - name: test_kctl
     type: runSh
