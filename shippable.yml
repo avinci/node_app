@@ -60,14 +60,6 @@ resources:
       isPull: false
       versionName: latest
 
-# REPO of kube configs
-  - name: config_repo
-    type: gitRepo
-    integration: "demo_gh"
-    versionTemplate:
-      sourceName: "avinci/cd_gke_kubectl"
-      branch: master
-
 # GKE cluster info
   - name: dev_cluster
     type: cluster
