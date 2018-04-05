@@ -15,6 +15,7 @@ integrations:
 branches:
   only:
     - master
+    - dev
 
 # using pre-defined build variables
 # full list http://docs.shippable.com/ci/advancedOptions/environmentVariables/
