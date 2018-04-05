@@ -84,13 +84,13 @@ resources:
       region: "us-west1-a"
 
   - name: prod_trig
-    type: param
+    type: params
     versionTemplate:
       params:
         DUMMY: "seed"
 
   - name: dev_trig
-    type: param
+    type: params
     versionTemplate:
       params:
         DUMMY: "seed"
