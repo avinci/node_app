@@ -125,8 +125,8 @@ jobs:
             - export APP_TAG=$(shipctl get_resource_version_key node_app_img_dh versionName)
             - if [[ $APP_TAG = *"master"* ]]; then export TRIG_RES="prod_trig"; fi
             - shipctl put_resource_state $TRIG_RES versionName $APP_TAG
-       - OUT: prod_trig
-       - OUT: dev_trig
+      - OUT: prod_trig
+      - OUT: dev_trig
 
   - name: dev_deploy
     type: deploy
